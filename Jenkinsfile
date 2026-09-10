@@ -54,6 +54,8 @@ pipeline {
                 archiveArtifacts artifacts: 'target/*.jar'
             }
         }
+    } // <--- THIS BRACE WAS MISSING TO CLOSE STAGES
+    
     post {
  
         success {
@@ -76,4 +78,3 @@ pipeline {
  
     }
 }
-
