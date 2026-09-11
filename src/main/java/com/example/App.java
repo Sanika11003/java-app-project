@@ -18,7 +18,7 @@ public class App {
 			"<html>" +
 			"<head><title>DevOps Project</title></head>" +
 			"<body>" +
-			"<h1>Hello from Docker</h1>" +
+			"<h1>This is project to push image in ECR</h1>" +
 			"<h2>Java Application</h2>" +
 			"<p>Running inside a docker container</p>" +
 			"<p>Docker -Port mapping Practical</p>" +
