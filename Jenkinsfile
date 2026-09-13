@@ -17,8 +17,8 @@ pipeline {
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
 
         // ECS
-        ECS_CLUSTER = 'devops-app-cluster'
-        ECS_SERVICE = 'devops-app-task-service'
+        ECS_CLUSTER = 'app-java-cluster'
+        ECS_SERVICE = 'app-java-service'
 
         // Docker image
         IMAGE_TAG = "${BUILD_NUMBER}"
