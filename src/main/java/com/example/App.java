@@ -18,11 +18,7 @@ public class App {
 			"<html>" +
 			"<head><title>DevOps Project</title></head>" +
 			"<body>" +
-<<<<<<< HEAD
-			"<h1>This is project to use webhook in jenkins to test automation</h1>" +
-=======
 			"<h1>This is project to check webhook integration in jenkins</h1>" +
->>>>>>> e234548 (Update)
 			"<h2>Java Application</h2>" +
 			"<p>Running inside a docker container</p>" +
 			"<p>Docker -Port mapping Practical</p>" +
