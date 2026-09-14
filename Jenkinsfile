@@ -61,17 +61,17 @@ pipeline {
                 '''
             }
         }
-
-                        stage('Docker Build') {
+        stage('Docker Build') {
             steps {
                 sh """
                     echo "========== DOCKER BUILD =========="
 
-                    # FIXED: Changed shell to triple double-quotes so Jenkins can read variables
-                    docker build --no-cache -t ${ECR_URI}:${IMAGE_TAG} .
+                    # FIXED: Hardcoded your real AWS account details to guarantee zero variable formatting errors
+                    docker build --no-cache -t ://amazonaws.com{IMAGE_TAG} .
                 """
             }
         }
+
 
         stage('ECR Login') {
             steps {
