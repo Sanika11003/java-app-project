@@ -14,7 +14,9 @@ pipeline {
 
         // ECR
         ECR_REPOSITORY = 'java-app-project'
-        ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}://{ECR_REPOSITORY}"
+        // FIXED: Removed the incorrect '://' and added the missing '$' before ECR_REPOSITORY
+        ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        ECR_URI        = "${ECR_REGISTRY}/${ECR_REPOSITORY}"
 
         // ECS
         ECS_CLUSTER = 'app-java-cluster'
@@ -61,64 +63,58 @@ pipeline {
                 '''
             }
         }
+        
         stage('Docker Build') {
             steps {
                 sh """
                     echo "========== DOCKER BUILD =========="
 
-                    # FIXED: Hardcoded your real AWS account details to guarantee zero variable formatting errors
-                    docker build --no-cache -t ://amazonaws.com{IMAGE_TAG} .
+                    # FIXED: Formatted tag accurately using double-quotes and pre-defined variables
+                    docker build --no-cache -t ${ECR_URI}:${IMAGE_TAG} .
                 """
             }
         }
 
-
         stage('ECR Login') {
             steps {
-                sh '''
+                sh """
                     echo "========== ECR LOGIN =========="
 
-                    aws ecr get-login-password \
-                    --region ${AWS_REGION} | \
-                    docker login \
-                    --username AWS \
-                    --password-stdin \
-                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                '''
+                    # FIXED: Updated string to cleanly evaluate environment tags
+                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                """
             }
         }
 
         stage('Docker Tag') {
             steps {
-                sh '''
+                sh """
                     echo "========== DOCKER TAG =========="
 
-                    # FIXED: Tags the built image to ECR URI directly
-                    docker tag \
-                    ${ECR_URI}:${IMAGE_TAG} \
-                    ${ECR_URI}:latest
-                '''
+                    # FIXED: Changed shell environment to double-quotes so variable injection parses correctly
+                    docker tag ${ECR_URI}:${IMAGE_TAG} ${ECR_URI}:latest
+                """
             }
         }
 
         stage('Push Image to ECR') {
             steps {
-                sh '''
+                sh """
                     echo "========== PUSH IMAGE TO ECR =========="
 
+                    # FIXED: Changed shell environment to double-quotes so variable injection parses correctly
                     docker push ${ECR_URI}:${IMAGE_TAG}
-
                     docker push ${ECR_URI}:latest
-                '''
+                """
             }
         }
 
         stage('Deploy to ECS') {
             steps {
-                sh '''
+                sh """
                     echo "========== ECS DEPLOYMENT =========="
 
-                    # FIXED: Downloads current task layout, injects the new image version, and updates service
+                    # FIXED: Double-quotes utilized to smoothly handle task mutations over variable arrays
                     aws ecs describe-task-definition --task-definition ${ECS_TASK_FAMILY} --region ${AWS_REGION} --query taskDefinition > task-def.json
                     
                     node -e "
@@ -154,7 +150,7 @@ pipeline {
                     
                     # Clean up temporary JSON files
                     rm -f task-def.json new-task-def.json registered-task.json
-                '''
+                """
             }
         }
     }
