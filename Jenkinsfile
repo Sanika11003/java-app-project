@@ -62,17 +62,18 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+               stage('Docker Build') {
             steps {
                 sh '''
                     echo "========== DOCKER BUILD =========="
 
-                    # FIXED: Uses your exact environment variables to avoid the format error
+                    # FIXED: Removed '://' and added missing '$' before variables
                     docker build \
-                    --no-cache -t ${ECR_URI}:${IMAGE_TAG} .
+                    --no-cache -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}://{ECR_REPOSITORY}:${IMAGE_TAG} .
                 '''
             }
         }
+
 
         stage('ECR Login') {
             steps {
