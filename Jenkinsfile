@@ -109,17 +109,53 @@ pipeline {
             }
         }
 
-             stage('Deploy to ECS') {
+        stage('Deploy to ECS') {
             steps {
                 sh """
                     echo "========== ECS DEPLOYMENT =========="
                     
-                    # Bypasses the task description script and forces a direct service rolling restart
+                    # 1. Downloads the active version layout specifications from AWS
+                    aws ecs describe-task-definition --task-definition ${ECS_TASK_FAMILY} --region ${AWS_REGION} --query taskDefinition > task-def.json
+                    
+                    # 2. Re-maps containerDefinitions parameters to bind the unique image build tag
+                    node -e "
+                    const fs = require('fs');
+                    const data = JSON.parse(fs.readFileSync('task-def.json'));
+                    const cleaned = {
+                        family: data.family,
+                        containerDefinitions: data.containerDefinitions,
+                        volumes: data.volumes,
+                        networkMode: data.networkMode,
+                        placementConstraints: data.placementConstraints,
+                        requiresCompatibilities: data.requiresCompatibilities,
+                        cpu: data.cpu,
+                        memory: data.memory,
+                        taskRoleArn: data.taskRoleArn,
+                        executionRoleArn: data.executionRoleArn
+                    };
+                    const container = cleaned.containerDefinitions.find(c => c.name === '${CONTAINER_NAME}');
+                    if (container) {
+                        container.image = '${ECR_URI}:${IMAGE_TAG}';
+                    } else {
+                        console.error('CRITICAL ERROR: CONTAINER_NAME target not found in configuration maps!');
+                        process.exit(1);
+                    }
+                    fs.writeFileSync('new-task-def.json', JSON.stringify(cleaned, null, 2));
+                    "
+                    
+                    # 3. Pushes and registers the new version schema modification to AWS registry systems
+                    aws ecs register-task-definition --cli-input-json file://new-task-def.json --region ${AWS_REGION} > registered-task.json
+
+                    # 4. Updates service running layouts pointing explicitly to the brand new definition revision
                     aws ecs update-service \
                     --cluster ${ECS_CLUSTER} \
                     --service ${ECS_SERVICE} \
+                    --task-definition ${ECS_TASK_FAMILY} \
                     --force-new-deployment \
                     --region ${AWS_REGION}
+                    
+                    # Clean up workspace temporary JSON files
+                    rm -f task-def.json new-task-def.json registered-task.json
                 """
             }
         }
@@ -128,14 +164,13 @@ pipeline {
 
     post {
         
-
         success {
             echo '======================================'
             echo ' CI/CD PIPELINE SUCCESSFUL'
             echo ' Java 21 Build Successful'
             echo ' Docker Image Built'
             echo ' Image Pushed to ECR'
-            echo ' ECS Deployment Triggered'
+            echo ' ECS Deployment Triggered with Dynamic Revision Tracking'
             echo '======================================'
         }
 
