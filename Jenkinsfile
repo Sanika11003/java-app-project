@@ -23,7 +23,7 @@ pipeline {
         ECS_SERVICE = 'app-java-service'
         
         // CRITICAL: Set these two strings to match your exact AWS ECS Console settings
-        ECS_TASK_FAMILY = 'java-app-project' 
+        ECS_TASK_FAMILY = 'app-java-task' 
         CONTAINER_NAME  = 'java-app-container' 
 
         // Docker image
