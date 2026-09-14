@@ -20,6 +20,9 @@ pipeline {
         ECS_CLUSTER = 'app-java-cluster'
         ECS_SERVICE = 'app-java-service'
 
+        ECS_TASK_FAMILY = 'app-java-task' 
+        CONTAINER_NAME  = 'java-app-container' 
+
         // Docker image
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
@@ -64,7 +67,7 @@ pipeline {
                     echo "========== DOCKER BUILD =========="
 
                     docker build \
-                    -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+                    --no-cache -t ${ECR_URI}:${IMAGE_TAG} .
                 '''
             }
         }
@@ -90,11 +93,7 @@ pipeline {
                     echo "========== DOCKER TAG =========="
 
                     docker tag \
-                    ${ECR_REPOSITORY}:${IMAGE_TAG} \
-                    ${ECR_URI}:${IMAGE_TAG}
-
-                    docker tag \
-                    ${ECR_REPOSITORY}:${IMAGE_TAG} \
+                    ${ECR_URI}:${IMAGE_TAG} \
                     ${ECR_URI}:latest
                 '''
             }
@@ -122,6 +121,7 @@ pipeline {
                     --service ${ECS_SERVICE} \
                     --force-new-deployment \
                     --region ${AWS_REGION}
+
                 '''
             }
         }
