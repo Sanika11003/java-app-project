@@ -109,50 +109,21 @@ pipeline {
             }
         }
 
-        stage('Deploy to ECS') {
+             stage('Deploy to ECS') {
             steps {
                 sh """
                     echo "========== ECS DEPLOYMENT =========="
-
-                    # FIXED: Double-quotes utilized to smoothly handle task mutations over variable arrays
-                    aws ecs describe-task-definition --task-definition ${ECS_TASK_FAMILY} --region ${AWS_REGION} --query taskDefinition > task-def.json
                     
-                    node -e "
-                    const fs = require('fs');
-                    const data = JSON.parse(fs.readFileSync('task-def.json'));
-                    const cleaned = {
-                        family: data.family,
-                        containerDefinitions: data.containerDefinitions,
-                        volumes: data.volumes,
-                        networkMode: data.networkMode,
-                        placementConstraints: data.placementConstraints,
-                        requiresCompatibilities: data.requiresCompatibilities,
-                        cpu: data.cpu,
-                        memory: data.memory,
-                        taskRoleArn: data.taskRoleArn,
-                        executionRoleArn: data.executionRoleArn
-                    };
-                    const container = cleaned.containerDefinitions.find(c => c.name === '${CONTAINER_NAME}');
-                    if (container) {
-                        container.image = '${ECR_URI}:${IMAGE_TAG}';
-                    }
-                    fs.writeFileSync('new-task-def.json', JSON.stringify(cleaned, null, 2));
-                    "
-                    
-                    aws ecs register-task-definition --cli-input-json file://new-task-def.json --region ${AWS_REGION} > registered-task.json
-
+                    # Bypasses the task description script and forces a direct service rolling restart
                     aws ecs update-service \
                     --cluster ${ECS_CLUSTER} \
                     --service ${ECS_SERVICE} \
-                    --task-definition ${ECS_TASK_FAMILY} \
                     --force-new-deployment \
                     --region ${AWS_REGION}
-                    
-                    # Clean up temporary JSON files
-                    rm -f task-def.json new-task-def.json registered-task.json
                 """
             }
         }
+
     }
 
     post {
