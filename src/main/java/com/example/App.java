@@ -19,7 +19,7 @@ public class App {
 			"<head><title>DevOps Project</title></head>" +
 			"<body>" +
 			"<h1>This is project to check webhook integration in jenkins</h1>" +
-			"<h2>Java Application</h2>" +
+			"<h2>Java Application for devops project</h2>" +
 			"<p>Running inside a docker container</p>" +
 			"<p>Docker -Port mapping Practical</p>" +
 			"</body>" +
