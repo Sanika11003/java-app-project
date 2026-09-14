@@ -109,44 +109,25 @@ pipeline {
             }
         }
 
-        stage('Deploy to ECS') {
+             stage('Deploy to ECS') {
             steps {
                 sh """
                     echo "========== ECS DEPLOYMENT =========="
                     
-                    # 1. Downloads the active version layout specifications from AWS
+                    # 1. Download active task definition version layout specifications from AWS
                     aws ecs describe-task-definition --task-definition ${ECS_TASK_FAMILY} --region ${AWS_REGION} --query taskDefinition > task-def.json
                     
-                    # 2. Re-maps containerDefinitions parameters to bind the unique image build tag
-                    node -e "
-                    const fs = require('fs');
-                    const data = JSON.parse(fs.readFileSync('task-def.json'));
-                    const cleaned = {
-                        family: data.family,
-                        containerDefinitions: data.containerDefinitions,
-                        volumes: data.volumes,
-                        networkMode: data.networkMode,
-                        placementConstraints: data.placementConstraints,
-                        requiresCompatibilities: data.requiresCompatibilities,
-                        cpu: data.cpu,
-                        memory: data.memory,
-                        taskRoleArn: data.taskRoleArn,
-                        executionRoleArn: data.executionRoleArn
-                    };
-                    const container = cleaned.containerDefinitions.find(c => c.name === '${CONTAINER_NAME}');
-                    if (container) {
-                        container.image = '${ECR_URI}:${IMAGE_TAG}';
-                    } else {
-                        console.error('CRITICAL ERROR: CONTAINER_NAME target not found in configuration maps!');
-                        process.exit(1);
-                    }
-                    fs.writeFileSync('new-task-def.json', JSON.stringify(cleaned, null, 2));
-                    "
+                    # 2. Extract only the valid fields needed to register a new task definition layout configuration
+                    jq '. | {family, containerDefinitions, volumes, networkMode, placementConstraints, requiresCompatibilities, cpu, memory, taskRoleArn, executionRoleArn}' task-def.json > cleaned-task-def.json
                     
-                    # 3. Pushes and registers the new version schema modification to AWS registry systems
-                    aws ecs register-task-definition --cli-input-json file://new-task-def.json --region ${AWS_REGION} > registered-task.json
+                    # 3. Use standard Linux sed to find the old image URI and swap it for your fresh build number tag variation
+                    # This replaces whatever image string is in there with your exact new build URI
+                    sed -i 's|"image": ".*"|"image": "${ECR_URI}:${IMAGE_TAG}"|g' cleaned-task-def.json
+                    
+                    # 4. Push and register the new version modification to AWS registry systems
+                    aws ecs register-task-definition --cli-input-json file://cleaned-task-def.json --region ${AWS_REGION} > registered-task.json
 
-                    # 4. Updates service running layouts pointing explicitly to the brand new definition revision
+                    # 5. Update service configuration pointing explicitly to the brand new definition revision variant
                     aws ecs update-service \
                     --cluster ${ECS_CLUSTER} \
                     --service ${ECS_SERVICE} \
@@ -155,10 +136,11 @@ pipeline {
                     --region ${AWS_REGION}
                     
                     # Clean up workspace temporary JSON files
-                    rm -f task-def.json new-task-def.json registered-task.json
+                    rm -f task-def.json cleaned-task-def.json registered-task.json
                 """
             }
         }
+
         
     }
 
