@@ -62,15 +62,14 @@ pipeline {
             }
         }
 
-                 stage('Docker Build') {
+                        stage('Docker Build') {
             steps {
-                sh '''
+                sh """
                     echo "========== DOCKER BUILD =========="
 
-                    # FIXED: Uses your pre-defined ECR_URI variable directly
-                    docker build \
-                    --no-cache -t ${ECR_URI}:${IMAGE_TAG} .
-                '''
+                    # FIXED: Changed shell to triple double-quotes so Jenkins can read variables
+                    docker build --no-cache -t ${ECR_URI}:${IMAGE_TAG} .
+                """
             }
         }
 
