@@ -64,7 +64,7 @@ pipeline {
                     echo "========== DOCKER BUILD =========="
 
                     docker build \
-                    -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+                    --no-cache -t ${ECR_REGISTRY}/${IMAGE_REPO_NAME}:${IMAGE_TAG} .
                 '''
             }
         }
